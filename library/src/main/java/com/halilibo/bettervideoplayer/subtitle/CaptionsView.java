@@ -4,9 +4,12 @@ import android.content.Context;
 import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.Build;
 import android.support.annotation.Nullable;
 import android.support.annotation.RawRes;
+import android.support.v7.widget.AppCompatTextView;
 import android.text.Html;
+import android.text.Spanned;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.widget.TextView;
@@ -25,7 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
-public class CaptionsView extends TextView implements Runnable{
+public class CaptionsView extends AppCompatTextView implements Runnable{
     private static final String TAG = "SubtitleView";
     private static final boolean DEBUG = false;
     private static final int UPDATE_INTERVAL = 50;
@@ -46,13 +49,19 @@ public class CaptionsView extends TextView implements Runnable{
     }
 
     @Override
+    @SuppressWarnings("deprecated")
     public void run() {
         if (player !=null && track!= null){
             int seconds = player.getCurrentPosition() / 1000;
-            setText(Html.fromHtml(
-                    // If debug mode is on, subtitle is shown with timing
-                    (DEBUG?"[" + HelperMethods.secondsToDuration(seconds) + "] ":"")
-                    + getTimedText(player.getCurrentPosition())));
+            String stringText = (DEBUG?"[" + HelperMethods.secondsToDuration(seconds) + "] ":"") +
+                getTimedText(player.getCurrentPosition());
+            Spanned htmlText = null;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                htmlText = Html.fromHtml(stringText, Html.FROM_HTML_MODE_LEGACY);
+            } else {
+                htmlText = Html.fromHtml(stringText);
+            }
+            setText(htmlText);
         }
         postDelayed(this, UPDATE_INTERVAL);
     }
@@ -166,9 +175,18 @@ public class CaptionsView extends TextView implements Runnable{
             // Remove unnecessary \n at the end of the string
             lineString = lineString.substring(0, lineString.length()-1);
 
-            long startTime = parseVtt(timeString.split(" --> ")[0]);
-            long endTime = parseVtt(timeString.split(" --> ")[1]);
-            track.put(startTime, new Line(startTime, endTime, lineString));
+            // Support 00:22:28.681 --> 00:22:30.265 position:95% align:right
+            String[] tokens = timeString.split(" ");
+            for (int i = 0; i < tokens.length; ++i) {
+                if (i > 0 && i < tokens.length - 1 && tokens[i].equalsIgnoreCase("-->")) {
+                    String startTimeString = tokens[i - 1];
+                    String endTimeString = tokens[i + 1];
+                    long startTime = parseVtt(startTimeString);
+                    long endTime = parseVtt(endTimeString);
+                    track.put(startTime, new Line(startTime, endTime, lineString));
+                    break;
+                }
+            }
         }
         return track;
     }

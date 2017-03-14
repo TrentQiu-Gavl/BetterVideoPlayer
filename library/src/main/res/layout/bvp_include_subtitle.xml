@@ -10,7 +10,7 @@
         android:layout_marginLeft="32dp"
         android:layout_marginRight="32dp"
         android:textSize="22sp"
-        android:gravity="center_horizontal|bottom"
+        android:gravity="right|bottom"
         android:id="@+id/subs_box"
         android:padding="@dimen/bvp_content_inset_half"
         android:textStyle="bold"/>
