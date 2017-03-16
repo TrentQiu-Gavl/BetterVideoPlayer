@@ -10,6 +10,7 @@ import android.support.annotation.RawRes;
 import android.support.v7.widget.AppCompatTextView;
 import android.text.Html;
 import android.text.Spanned;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.widget.TextView;
@@ -33,7 +34,8 @@ public class CaptionsView extends AppCompatTextView implements Runnable{
     private static final boolean DEBUG = false;
     private static final int UPDATE_INTERVAL = 50;
     private MediaPlayer player;
-    private TreeMap<Long, Line> track;
+    private TreeMap<Long, Line> stringTrack;
+    private TreeMap<Long, Line> styledtrack;
     private CMime mimeType;
 
     public CaptionsView(Context context) {
@@ -51,26 +53,42 @@ public class CaptionsView extends AppCompatTextView implements Runnable{
     @Override
     @SuppressWarnings("deprecated")
     public void run() {
-        if (player !=null && track!= null){
+        if (player !=null){
             int seconds = player.getCurrentPosition() / 1000;
-            String stringText = (DEBUG?"[" + HelperMethods.secondsToDuration(seconds) + "] ":"") +
-                getTimedText(player.getCurrentPosition());
-            Spanned htmlText = null;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                htmlText = Html.fromHtml(stringText, Html.FROM_HTML_MODE_LEGACY);
-            } else {
-                htmlText = Html.fromHtml(stringText);
+
+            CharSequence text = getTimedText(player.getCurrentPosition());
+            if (!TextUtils.isEmpty(text)) {
+                if (DEBUG) {
+                    text = "[" + HelperMethods.secondsToDuration(seconds) + "] " + text;
+                }
+                setText(text);
             }
-            setText(htmlText);
         }
         postDelayed(this, UPDATE_INTERVAL);
     }
 
-    private String getTimedText(long currentPosition) {
-        String result = "";
-        for(Map.Entry<Long, Line> entry: track.entrySet()){
-            if (currentPosition < entry.getKey()) break;
-            if (currentPosition < entry.getValue().to) result = entry.getValue().text;
+    private CharSequence getTimedText(long currentPosition) {
+        CharSequence result = "";
+        if (stringTrack != null && stringTrack.size() > 0) {
+            for(Map.Entry<Long, Line> entry: stringTrack.entrySet()){
+                if (currentPosition < entry.getKey()) break;
+                if (currentPosition < entry.getValue().to) {
+                    CharSequence chars = entry.getValue().text;
+                    if (chars instanceof String) {
+                        result = Html.fromHtml((String)chars);
+                    }
+                }
+            }
+        }
+        if (TextUtils.isEmpty(result)) {
+            if (styledtrack != null && styledtrack.size() > 0) {
+                for(Map.Entry<Long, Line> entry: styledtrack.entrySet()){
+                    if (currentPosition < entry.getKey()) break;
+                    if (currentPosition < entry.getValue().to) {
+                        result = entry.getValue().text;
+                    }
+                }
+            }
         }
         return result;
     }
@@ -93,14 +111,14 @@ public class CaptionsView extends AppCompatTextView implements Runnable{
 
     public void setCaptionsSource(@RawRes int ResID, CMime mime){
         this.mimeType = mime;
-        track = getSubtitleFile(ResID);
+        stringTrack = getSubtitleFile(ResID);
 
     }
 
     public void setCaptionsSource(@Nullable Uri path, CMime mime){
         this.mimeType = mime;
         if(path == null){
-            track = new TreeMap<>();
+            stringTrack = new TreeMap<>();
         }
         if (HelperMethods.isRemotePath(path)) {
             try {
@@ -110,9 +128,13 @@ public class CaptionsView extends AppCompatTextView implements Runnable{
                 e.printStackTrace();
             }
         } else {
-            track = getSubtitleFile(path.toString());
+            stringTrack = getSubtitleFile(path.toString());
         }
 
+    }
+
+    public void setCaptionTrack(TreeMap<Long, Line> track) {
+        this.styledtrack = track;
     }
 
     /////////////Utility Methods:
@@ -252,7 +274,7 @@ public class CaptionsView extends AppCompatTextView implements Runnable{
             @Override
             public void onDownload(File file) {
                 try {
-                    track = getSubtitleFile(file.getPath());
+                    stringTrack = getSubtitleFile(file.getPath());
                 }catch (Exception ignored){} // Possibility of download returning 500
             }
 
@@ -268,10 +290,10 @@ public class CaptionsView extends AppCompatTextView implements Runnable{
     public static class Line {
         long from;
         long to;
-        String text;
+        CharSequence text;
 
 
-        public Line(long from, long to, String text) {
+        public Line(long from, long to, CharSequence text) {
             this.from = from;
             this.to = to;
             this.text = text;

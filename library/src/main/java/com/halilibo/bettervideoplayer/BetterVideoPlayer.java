@@ -63,6 +63,7 @@ import com.halilibo.bettervideoplayer.utility.Util;
 import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.TreeMap;
 
 /**
  * @author Aidan Follestad (halilibo)
@@ -539,6 +540,10 @@ public class BetterVideoPlayer extends RelativeLayout implements IUserMethods,
     @Override
     public void setCaptions(@RawRes int resId, CaptionsView.CMime cMime) {
         mSubView.setCaptionsSource(resId, cMime);
+    }
+
+    public void setCaptionTrack(TreeMap<Long, CaptionsView.Line> track) {
+        mSubView.setCaptionTrack(track);
     }
 
     @Override
