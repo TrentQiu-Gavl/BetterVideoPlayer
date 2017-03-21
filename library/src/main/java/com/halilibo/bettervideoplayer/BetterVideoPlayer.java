@@ -144,6 +144,7 @@ public class BetterVideoPlayer extends RelativeLayout implements IUserMethods,
     private TextView mLabelPosition;
     private TextView mLabelDuration;
     private ImageButton mBtnPlayPause;
+    private TextView mSubtitleController;
 
     private boolean mSurfaceAvailable;
     private boolean mIsPrepared;
@@ -165,7 +166,7 @@ public class BetterVideoPlayer extends RelativeLayout implements IUserMethods,
     private boolean mAutoPlay;
     private int mInitialPosition = -1;
     private boolean mControlsDisabled;
-
+    private boolean mShowSubtitle = true;
 
     private void init(Context context, AttributeSet attrs) {
         setBackgroundColor(Color.BLACK);
@@ -535,15 +536,18 @@ public class BetterVideoPlayer extends RelativeLayout implements IUserMethods,
     @Override
     public void setCaptions(Uri source, CaptionsView.CMime cMime) {
         mSubView.setCaptionsSource(source, cMime);
+        mSubtitleController.setVisibility(VISIBLE);
     }
 
     @Override
     public void setCaptions(@RawRes int resId, CaptionsView.CMime cMime) {
         mSubView.setCaptionsSource(resId, cMime);
+        mSubtitleController.setVisibility(VISIBLE);
     }
 
     public void setCaptionTrack(TreeMap<Long, CaptionsView.Line> track) {
         mSubView.setCaptionTrack(track);
+        mSubtitleController.setVisibility(VISIBLE);
     }
 
     @Override
@@ -786,6 +790,21 @@ public class BetterVideoPlayer extends RelativeLayout implements IUserMethods,
         mBtnPlayPause = (ImageButton) mControlsFrame.findViewById(R.id.btnPlayPause);
         mBtnPlayPause.setOnClickListener(this);
         mBtnPlayPause.setImageDrawable(mPlayDrawable);
+
+        mSubtitleController = (TextView) mControlsFrame.findViewById(R.id.subtitleController);
+        mSubtitleController.setVisibility(GONE);
+        mSubtitleController.setOnClickListener(new OnClickListener() {
+            @Override public void onClick(View v) {
+                if (mShowSubtitle) {
+                    mSubView.setVisibility(INVISIBLE);
+                    mSubtitleController.setTextColor(Color.GRAY);
+                } else {
+                    mSubView.setVisibility(VISIBLE);
+                    mSubtitleController.setTextColor(Color.WHITE);
+                }
+                mShowSubtitle = !mShowSubtitle;
+            }
+        });
 
         if (mControlsDisabled) {
             disableControls();
