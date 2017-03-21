@@ -51,18 +51,15 @@ public class CaptionsView extends AppCompatTextView implements Runnable{
     }
 
     @Override
-    @SuppressWarnings("deprecated")
     public void run() {
         if (player !=null){
             int seconds = player.getCurrentPosition() / 1000;
 
             CharSequence text = getTimedText(player.getCurrentPosition());
-            if (!TextUtils.isEmpty(text)) {
-                if (DEBUG) {
-                    text = "[" + HelperMethods.secondsToDuration(seconds) + "] " + text;
-                }
-                setText(text);
+            if (DEBUG) {
+                text = "[" + HelperMethods.secondsToDuration(seconds) + "] " + text;
             }
+            setText(text);
         }
         postDelayed(this, UPDATE_INTERVAL);
     }
