@@ -55,7 +55,8 @@
         android:layout_width="@dimen/bvp_button_size"
         android:layout_height="@dimen/bvp_button_size"
         android:background="?selectableItemBackground"
-        android:text="CC"
+        android:text="Bids"
+        android:textAllCaps="false"
         android:textColor="#fff"
         />
 
